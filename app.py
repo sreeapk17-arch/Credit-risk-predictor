@@ -302,10 +302,38 @@ div[data-testid="stButton"] > button:hover {
 # ── LOAD ASSETS ────────────────────────────────────────────────────────────────
 @st.cache_resource
 def load_assets():
-    model   = joblib.load('model.pkl')
-    scaler  = joblib.load('scaler.pkl')
-    encoders = joblib.load('encoders.pkl')
+    import pandas as pd
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    from sklearn.ensemble import RandomForestClassifier
+
+    df = pd.read_csv("train.csv")
+
+    # Keep only important columns
+    df = df[['age','balance','duration','job','marital','education','y']]
+
+    df['y'] = df['y'].map({'yes':1, 'no':0})
+    df = df.dropna()
+
+    # Encode
+    encoders = {}
+    for col in ['job','marital','education']:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+        encoders[col] = le
+
+    X = df.drop('y', axis=1)
+    y = df['y']
+
+    # Scale
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Train model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_scaled, y)
+
     return model, scaler, encoders
+
 
 try:
     model, scaler, encoders = load_assets()
